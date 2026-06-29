@@ -320,12 +320,78 @@ end.
 - No pixel-perfect clicks without random offset
 - No physical mouse input — always use SMART-simulated mouse via `Mouse.Move()`, `Mouse.Click()`, `Mouse.Hold()`, `Mouse.Release()`. Never `SetCursorPos`, `mouse_event`, or Windows API input functions.
 
+## High-Intensity Activities (Bosses / Raids / Slayer)
+
+For slayer, general combat, and low-intensity PvM: use **WaspLib's CombatHandler** out of the box. It handles gear setup, consumables, special attacks, loot, cannon, and auto-eat.
+
+For bosses and raids: CombatHandler explicitly says it's not suitable. Use the lower-level SRL-T primitives with custom phase logic.
+
+### Phase Machines Over State Machines
+
+Boss fights have deterministic phases. Architecture changes from a "what do I do next?" state machine to a "what phase is the boss in?" phase machine:
+
+```
+PHASE 1 (75-100% HP): Attack → pray ranged → attack → pray ranged → REPEAT
+PHASE_TRANSITION:      Boss sinks → wait 2 ticks → move to safespot
+PHASE 2 (50-75% HP):   Attack → pray mage → dodge special → attack → REPEAT
+DEATH:                 Detect respawn → reclaim gear → re-enter instance
+```
+
+### Tick-Precise Core, Human Envelope
+
+The core execution (prayer flick, gear switch, movement) must be tick-perfect to survive. But the *decision* to execute should have micro-variance:
+- Hesitate 1-2 ticks before reacting to a phase change (not 0 ticks, not 10)
+- Occasionally miss a prayer flick and correct (1-3% of kills)
+- Sometimes eat 1 tick late under pressure
+- Vary *which* tick you execute on — don't always prayer-flick on the exact same game tick
+
+### Fatigue Modeling
+
+A human who kills Vorkath 1000 times will be perfect on kill 47, sloppy on kill 312, and panic on kill 689. Longer sessions should introduce more "mistakes":
+- After 30 minutes, increase reaction delay range by 50ms
+- After 60 minutes, increase misclick rate by 1%
+- After 90 minutes, introduce a "fumble" (miss a prayer flick / eat unnecessarily)
+- Vary these thresholds per session so they're not predictable
+
+### Available Primitives for Boss Scripts
+
+SRL-T provides these building blocks. Custom boss code uses these, not CombatHandler:
+
+| Primitive | Usage |
+|-----------|-------|
+| `Prayer.ActivatePrayer(ERSPrayer.PROTECT_FROM_MISSILES)` | Switch prayers per boss attack style |
+| `Prayer.IsPrayerActive(ERSPrayer.PIETY)` | Verify prayer state |
+| `QuickPrayer` | Setup/d tear down quick-prayer presets between kills |
+| `Equipment.ClickSlot(ERSEquipmentSlot.WEAPON, 'Wield')` | Gear switch mid-fight |
+| `Equipment.DiscoverAll()` | Verify correct gear equipped |
+| `Equipment.ContainsAny(['Item1', 'Item2'])` | Check gear state |
+| `Combat.GetHP()` | Health monitoring |
+| `Minimap.GetSpecLevel()` / `Minimap.EnableSpec(WeaponSpec)` | Special attacks |
+| `MainScreen.FindHitsplats()` | Detect boss damage (type, position, amount) |
+| `MainScreen.FindHPBars()` | Track boss HP percentage |
+| `MainScreen.InCombat()` | Combined hit detection (XP drops + hitsplats + HP bars) |
+| `Inventory.Interact(Slot, 'Wield')` | Gear switching from inventory |
+| `Inventory.Consume(ERSConsumable.FOOD)` | Eating with timer management |
+| `GameTabs.Open(ERSGameTab.PRAYER)` | Tab switching for prayer setup |
+| `GameTabs.Open(ERSGameTab.EQUIPMENT)` | Tab switching for gear checks |
+
+### When to Use CombatHandler vs Custom
+
+| Scenario | Use |
+|----------|-----|
+| Slayer (normal monsters) | CombatHandler — handles everything |
+| Slayer (boss tasks like Cerberus, Kraken) | CombatHandler + custom phase overrides |
+| Easy bosses (Obor, Bryophyta, Giant Mole) | Custom with SRL-T primitives — simple enough |
+| Mid bosses (Vorkath, Zulrah, Demonics) | Custom phase machine + SRL-T primitives |
+| Hard bosses (CG, ToA, ToB, Inferno) | Custom — needs tick-perfect execution, too specific |
+| Raids | Custom — too many variables for a generic handler |
+
 ## Script Engineering Principles
 
-- **State machine design** — scripts should be state-driven, not linear
-- **Failures are states** — "ran out of supplies" is a state, not a crash
+- **State machine design** — scripts should be state-driven, not linear. For bosses, use phase machines.
+- **Failures are states** — "ran out of supplies" is a state, not a crash. For bosses, "died" is a state with a recovery path.
 - **Log everything** — use `WriteLn()` for debug, ProgressReport for user-facing stats
 - **Delegation over duplication** — put reusable logic in functions, not inline
 - **No magic numbers** — use constants for item IDs, tile coordinates, thresholds
-- **Anti-ban is a feature, not an afterthought** — plan it into the architecture
+- **Anti-ban is a feature, not an afterthought** — plan it into the architecture. For bosses, anti-ban sits between kills, not during.
 - **The smallest change that works** — don't over-engineer. Simple scripts run longer.

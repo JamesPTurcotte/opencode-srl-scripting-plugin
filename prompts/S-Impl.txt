@@ -21,6 +21,250 @@ Given the architecture (from S-Arch) and tech selection (from S-Tech), write the
 13. **Vary reaction delay per interaction.** Never respond in the same time window twice. Range 80-350ms. Some fast, some slow. Vary it unpredictably.
 14. **Simulated mouse only.** Use only `Mouse.Move()`, `Mouse.Click()`, `Mouse.Hold()`, `Mouse.Release()` for all input. Never use physical mouse APIs (`SetCursorPos`, `mouse_event`, Windows `SendInput` with physical flag). SMART-simulated input is invisible to the user, doesn't steal their cursor, and is safer from detection.
 
+## Script Template (follow this structure)
+
+```pascal
+program ScriptName;
+{$DEFINE SCRIPT_ID := 'script-id'}
+{$DEFINE SCRIPT_REVISION := '1.0'}
+{$I WaspLib/osr.simba}
+
+// ---- Constants ----
+const
+  ITEM_LOGS = 1511;
+  TILE_BANK = Point(3250, 3420);
+  TILE_TREES = Point(3255, 3425);
+  HP_EAT_THRESHOLD = 50;
+
+// ---- Variables ----
+var
+  gState: Integer;
+  gRuns: Integer;
+  // ... state-specific vars
+
+// ---- Anti-ban ----
+procedure ExecuteAntiBan();
+begin
+  // Standard anti-ban
+end;
+
+// ---- Task procedures ----
+procedure WalkToBank();
+begin
+  // ...
+end;
+
+// ---- State machine ----
+procedure ExecuteState();
+begin
+  case gState of
+    0: ; // STARTUP
+    1: ; // WALK_TO
+    // etc.
+  end;
+end;
+
+// ---- Main loop ----
+procedure MainLoop();
+begin
+  repeat
+    ExecuteAntiBan();
+    ExecuteState();
+    Wait(RandomRange(200, 400));
+  until(False);
+end;
+
+// ---- Entry ----
+begin
+  ScriptStart('ScriptName', SCRIPT_REVISION);
+  MainLoop();
+  ScriptEnd();
+end.
+```
+
+## High-Intensity Mode (Bosses / Raids)
+
+When S-Arch specifies "MODE: Boss", switch from randomized execution to **tick-precise core with human envelope**.
+
+### When to Use CombatHandler vs Custom
+
+| Scenario | Approach |
+|----------|----------|
+| Slayer (normal) | `CombatHandler.Setup(...)` — handles everything |
+| Slayer boss (Kraken, Cerberus) | `CombatHandler` + custom phase overrides injected before `DoActions` |
+| Boss (Vorkath, Zulrah, etc.) | Custom phase machine using SRL-T primitives below |
+| Raids (ToA, ToB, Cox) | Custom — too variable for generics |
+
+### Key Primitives for Boss Scripts
+
+```pascal
+// Prayer switching — use ERSPrayer enum
+Prayer.ActivatePrayer(ERSPrayer.PROTECT_FROM_MISSILES);
+Prayer.ActivatePrayer(ERSPrayer.PIETY);
+
+// Check prayer state
+if Prayer.IsPrayerActive(ERSPrayer.PROTECT_FROM_MAGIC) then
+  WriteLn('Protect from magic is on');
+
+// Quick-prayer toggle
+Minimap.EnablePrayer();
+Minimap.DisablePrayer();
+
+// Gear switching
+Equipment.ClickSlot(ERSEquipmentSlot.WEAPON, 'Wield');
+Inventory.Interact(SlotIndex, 'Wield');  // from inventory
+
+// Verify gear
+if Equipment.ContainsItem('Blowpipe') then ...
+if Equipment.ContainsAll(['Item1', 'Item2']) then ...
+
+// Special attacks
+if Minimap.GetSpecLevel() >= 50 then
+  Minimap.EnableSpec(50);
+
+// Hit detection
+var splats: TRSHitsplatArray;
+splats := MainScreen.FindHitsplats();
+// Each splat has: Position, Damage, Type (DAMAGE/HEAL/POISON)
+
+// Boss HP tracking
+var bars: TRSHPBarArray;
+bars := MainScreen.FindHPBars();
+// Each bar has: Percent (0-100), Position
+
+// In-combat detection (combines XP drops + hitsplats + HP bars)
+if MainScreen.InCombat() then ...
+
+// Tab switching
+GameTabs.Open(ERSGameTab.PRAYER);
+GameTabs.Open(ERSGameTab.EQUIPMENT);
+
+// Consumables (timer-managed)
+Inventory.Consume(ERSConsumable.FOOD);
+Inventory.Consume(ERSConsumable.PRAYER);
+
+// Prayer level
+var pp := Minimap.GetPrayerLevel();  // current prayer points
+```
+
+### Tick-Precise Execution Pattern
+
+```pascal
+// During boss phases, execute with game-tick awareness (600ms per tick)
+// BUT vary the exact tick you act on (don't always act on tick 0)
+
+procedure ExecutePhaseAttack();
+var
+  tickDelay: Integer;
+begin
+  // Vary reaction by 1-3 ticks to avoid perfect patterns
+  tickDelay := RandomRange(0, 2);  // 0-2 tick hesitation
+  if tickDelay > 0 then
+    Wait(tickDelay * 600);
+
+  // Execute the action (prayer switch, attack, move)
+  Mouse.Click(Target, MOUSE_LEFT);
+end;
+
+// For prayer flicking — maintain protection but with micro-variance
+procedure MaintainProtectionPrayer(neededPrayer: ERSPrayer);
+begin
+  if not Prayer.IsPrayerActive(neededPrayer) then
+  begin
+    // Humans don't react instantly — sometimes 1 tick late
+    Wait(RandomRange(0, 100));  // 0-1 tick hesitation
+    Prayer.ActivatePrayer(neededPrayer);
+  end;
+end;
+```
+
+### Gear Switch Pattern
+
+```pascal
+// Gear switch with inventory interaction
+// Always overshoot the inventory slot, then correct
+
+procedure SwitchWeapon(ItemName: String);
+var
+  slot: Integer;
+begin
+  slot := Inventory.IndexOf(ItemName);
+  if slot = -1 then Exit;
+
+  // Move to slot with overshoot
+  OvershootAndCorrect(Inventory.MouseSlot(slot));
+  SimulateHumanReaction();
+
+  // Click to wield
+  if not Inventory.Interact(slot, 'Wield') then
+    WriteLn('Failed to switch to ' + ItemName);
+end;
+```
+
+### Fatigue Model
+
+```pascal
+// Track session duration and degrade performance over time
+var
+  gSessionStart: UInt64;
+  gFatigueModifier: Integer;  // 0 = fresh, 1 = tired, 2 = exhausted
+
+procedure UpdateFatigue();
+var
+  elapsed: Integer;  // minutes
+begin
+  elapsed := (GetTickCount() - gSessionStart) / 60000;
+
+  if elapsed > 90 then
+    gFatigueModifier := 2      // exhausted: more mistakes
+  else if elapsed > 60 then
+    gFatigueModifier := 1      // tired: occasional fumbles
+  else if elapsed > 30 then
+    gFatigueModifier := 0      // warmed up: slight variance
+  else
+    gFatigueModifier := -1;    // fresh: sharpest performance
+end;
+
+// Use fatigue to modify reaction time:
+procedure FatiguedReaction();
+begin
+  case gFatigueModifier of
+    -1: Wait(RandomRange(0, 100));     // fresh: quick reactions
+     0: Wait(RandomRange(50, 200));    // warmed up: normal
+     1: Wait(RandomRange(100, 400));   // tired: slower, fumble chance
+     2: Wait(RandomRange(200, 600));   // exhausted: sloppy
+  end;
+end;
+```
+
+### Between-Kill Anti-Ban
+
+```pascal
+// After each kill, before the next: full anti-ban
+procedure BetweenKillAntiBan();
+begin
+  case Random(10) of
+    0: Antiban.RandomMouseMovement();
+    1: Antiban.RandomRClick();
+    2: Antiban.RandomCheckXP();
+    3: Antiban.RandomCheckInventory();
+    4: Antiban.RandomHover();
+    5: Antiban.RandomCheckEquipment();
+    6: Antiban.RandomCheckCombat();
+    7: Antiban.RandomCheckPrayer();
+    8: begin
+         // Idle briefly between kills — human takes a breath
+         Wait(RandomRange(3000, 8000));
+       end;
+    9: begin
+         // Camera adjustment
+         Mouse.Move(RandomRange(0, 800), RandomRange(0, 600));
+         Wait(RandomRange(500, 1500));
+       end;
+  end;
+end;
+```
+
 ## API Accuracy Rules
 
 - Use `check-srl-api` or `check-wasplib-api` to verify any function you're unsure about
@@ -35,5 +279,6 @@ Given the architecture (from S-Arch) and tech selection (from S-Tech), write the
 - Use `RandomRange()` not `Random()` for time delays
 - Every blocking wait must have a timeout
 - No infinite loops without an exit path
-- Anti-ban in every loop iteration
+- Anti-ban in every loop iteration (for bosses: between kills at minimum)
 - Include error recovery for: lost position, full inventory, empty inventory, no targets, death
+- For boss scripts, also recover from: death (reclaim + re-gear + re-enter), instance loss, failed gear switch
