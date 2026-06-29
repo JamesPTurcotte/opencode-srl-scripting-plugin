@@ -1,9 +1,854 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
+    "./plugins/romantasy.mjs",
+    "./plugins/litrpg.mjs",
+    "./plugins/dev.mjs",
     "./plugins/srl.mjs"
   ],
   "agent": {
+    "R-Plan": {
+      "description": "Orchestrates the planning pipeline. Guides the user through the 10-section architecture questionnaire by delegating to specialist sub-agents. Invoke with a book idea to begin.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Plan.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "R-Plan": "deny"
+        }
+      }
+    },
+    "R-Lore": {
+      "description": "World-building specialist. Builds setting, factions, magic systems, and romantic constraints.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/R-Lore.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Character": {
+      "description": "Character creation specialist. Designs core wounds, archetypes, voice tables, and character arcs.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/R-Character.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Structure": {
+      "description": "Structural planner. Maps chapter beat map, hook escalation, act architecture, and density specification.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/R-Structure.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Intimacy": {
+      "description": "Romance arc designer. Specifies touch map, dialogue register map, intimacy escalation, decoy scenes, and quotable moments.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/R-Intimacy.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Market": {
+      "description": "Commercial viability specialist. Selects tropes, positions spice level, writes blurb, identifies comparable titles.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Market.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Write": {
+      "description": "Orchestrates the writing pipeline. Delegates chapter drafting to specialist sub-agents through a 5-pass process: abundance, dialogue polish, interiority expansion, ruthless cut, continuity lock.",
+      "mode": "primary",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/R-Write.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "R-Write": "deny"
+        }
+      }
+    },
+    "R-Scene": {
+      "description": "Abundance writer. Writes chapters at 150% of target word count with full heat and no self-editing.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/R-Scene.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Dialogue": {
+      "description": "Dialogue enrichment specialist. Applies 8 mechanisms, body beats, subtext layers, and proximity principles to all exchanges.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/R-Dialogue.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Texture": {
+      "description": "Texture specialist. Adds interiority moments, reaction delays, and sensory transition texture to chapters.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/R-Texture.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Refine": {
+      "description": "Ruthless cutter. Cuts chapters to target word count while preserving texture. Enforces style fingerprint density targets.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Refine.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Sentry": {
+      "description": "Continuity enforcer. Updates romance state tracker, verifies hooks, checks timeline and magic rule consistency.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/R-Sentry.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Proof": {
+      "description": "Orchestrates the proofing pipeline. Runs multi-pass multi-agent editing: micro-scalpel, macro-architect, dimensional linter, recursive paradox check. Invoke with 'proof <path>' or 'proof-full <dir>'.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Proof.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": {
+          "scripts/compute-delta.sh *": "allow",
+          "*": "ask"
+        },
+        "task": {
+          "*": "allow",
+          "R-Proof": "deny"
+        }
+      }
+    },
+    "R-Pedant": {
+      "description": "Grammar and syntax enforcer. Zero-tolerance for orthographic errors, comma splices, and dangling modifiers.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/R-Pedant.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Logic": {
+      "description": "Causal integrity auditor. Rebuilds timelines, flags fallacies, checks spatial and magic system consistency.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Logic.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Poet": {
+      "description": "Prosody and rhythm analyst. Hunts AI-sounding text patterns: uniform cadence, excessive transitions, cliche triads, low burstiness.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/R-Poet.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Threads": {
+      "description": "Narrative thread tracker. Monitors McGuffins, Chekhov's Guns, character arcs, and expository dialogue.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/R-Threads.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Skeptic": {
+      "description": "Devil's advocate. Reads with active hostility. Challenges every paragraph's necessity, character motivation, and scene purpose.",
+      "mode": "subagent",
+      "temperature": 0.5,
+      "prompt": "{file:./prompts/R-Skeptic.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Sell": {
+      "description": "Orchestrates the selling pipeline. Transforms a finished manuscript into blurbs, hooks, cover copy, and Amazon keywords. Invoke with a finished book to begin.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Sell.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "R-Sell": "deny"
+        }
+      }
+    },
+    "R-Blurb": {
+      "description": "Blurbsmith. Writes 3 blurb variants (Amazon long, back cover, social short) from manuscript summary.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/R-Blurb.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Hooks": {
+      "description": "Quote hunter. Extracts 5-7 quotable lines verbatim from the manuscript.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/R-Hooks.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-CoverText": {
+      "description": "Cover copywriter. Generates tagline, subtitle options, back cover copy, genre tags.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/R-CoverText.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Keywords": {
+      "description": "Discoverability specialist. Generates Amazon categories, keywords, comparable titles, series positioning.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Keywords.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-ThreadTracker": {
+      "description": "Narrative thread auditor for series continuity.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/R-ThreadTracker.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-BibleGuard": {
+      "description": "Series bible enforcement against new prose.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/R-BibleGuard.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Gatekeeper": {
+      "description": "Entry point auditor for series books.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/R-Gatekeeper.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Track": {
+      "description": "Progress tracker for word counts and trends.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Track.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Audio": {
+      "description": "Audiobook readiness auditor.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/R-Audio.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "R-Series": {
+      "description": "Series continuity orchestrator. Delegates to R-ThreadTracker, R-BibleGuard, R-Gatekeeper.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/R-Series.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": {
+          "*": "allow",
+          "R-Series": "deny"
+        },
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "L-Architect": {
+      "description": "Orchestrates the LitRPG planning pipeline. Guides the user through system design, class building, and dungeon architecture by delegating to specialist sub-agents.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Architect.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": { "*": "allow", "L-Architect": "deny" }
+      }
+    },
+    "L-System": {
+      "description": "System mechanics builder. Designs stats, skills, classes, magic systems, and progression tables.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/L-System.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Build": {
+      "description": "Character build specialist. Designs character archetypes, stat distributions, skill trees, and optimization paths.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/L-Build.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Dungeon": {
+      "description": "Dungeon/floor architect. Maps floor/quest structure, boss encounters, loot tables, and arc architecture.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/L-Dungeon.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Combat": {
+      "description": "Combat encounter designer. Designs combat encounters, system mechanics, tension escalation, and set-piece battles.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/L-Combat.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Market": {
+      "description": "LitRPG market analyst. Selects tropes, positions system style, writes blurb, identifies comparable titles.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Market.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Write": {
+      "description": "Orchestrates the LitRPG writing pipeline. Delegates chapter drafting to specialist sub-agents through a 5-pass process: abundance, banter polish, atmosphere expansion, ruthless cut, continuity lock.",
+      "mode": "primary",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/L-Write.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": { "*": "allow", "L-Write": "deny" }
+      }
+    },
+    "L-Scene": {
+      "description": "Abundance writer for LitRPG. Writes chapters at 150% of target word count with full system detail and no self-editing.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/L-Scene.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Banter": {
+      "description": "LitRPG dialogue enrichment specialist. Applies 8 mechanisms, body beats, subtext layers, and party-banter patterns.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/L-Banter.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Crawl": {
+      "description": "Atmosphere and tension specialist. Adds dungeon crawl interiority, aftermath intervals, sensory transition texture.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/L-Crawl.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Refine": {
+      "description": "Ruthless cutter for LitRPG prose. Cuts chapters to target word count while preserving texture. Enforces style fingerprint density targets.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Refine.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Tracker": {
+      "description": "LitRPG continuity enforcer. Updates system state tracker, verifies hooks, checks stat/level/inventory consistency.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/L-Tracker.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Proof": {
+      "description": "Orchestrates the LitRPG proofing pipeline. Runs multi-pass multi-agent editing: micro-scalpel, macro-architect, dimensional linter, recursive paradox check.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Proof.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": { "*": "allow", "L-Proof": "deny" }
+      }
+    },
+    "L-Pedant": {
+      "description": "Grammar and syntax enforcer. Zero-tolerance for orthographic errors, comma splices, and dangling modifiers.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/L-Pedant.txt}",
+      "permission": { "read": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Logic": {
+      "description": "Causal integrity auditor for LitRPG. Rebuilds timelines, flags fallacies, checks spatial and system rule consistency.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Logic.txt}",
+      "permission": { "read": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Poet": {
+      "description": "Prosody and rhythm analyst. Hunts AI-sounding text patterns in LitRPG prose.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/L-Poet.txt}",
+      "permission": { "read": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Threads": {
+      "description": "Narrative thread tracker for LitRPG. Monitors McGuffins, Chekhov's Guns, item tracking, and expository dialogue.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/L-Threads.txt}",
+      "permission": { "read": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Skeptic": {
+      "description": "Devil's advocate for LitRPG prose. Reads with active hostility. Challenges every paragraph's necessity.",
+      "mode": "subagent",
+      "temperature": 0.5,
+      "prompt": "{file:./prompts/L-Skeptic.txt}",
+      "permission": { "read": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Sell": {
+      "description": "Orchestrates the LitRPG selling pipeline. Transforms a finished manuscript into blurbs, hooks, cover copy, and Amazon keywords.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Sell.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": { "*": "allow", "L-Sell": "deny" }
+      }
+    },
+    "L-Blurb": {
+      "description": "LitRPG blurbsmith. Writes 3 blurb variants (Amazon long, back cover, social short) from manuscript summary.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "prompt": "{file:./prompts/L-Blurb.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Hooks": {
+      "description": "Quote hunter for LitRPG. Extracts 5-7 quotable lines verbatim from the manuscript.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/L-Hooks.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-CoverText": {
+      "description": "LitRPG cover copywriter. Generates tagline, subtitle options, back cover copy, genre tags, and cover art prompts.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/L-CoverText.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Keywords": {
+      "description": "LitRPG discoverability specialist. Generates Amazon categories, keywords, comparable titles, series positioning.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Keywords.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-ThreadTracker": {
+      "description": "Narrative thread auditor for LitRPG series continuity.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/L-ThreadTracker.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-BibleGuard": {
+      "description": "LitRPG system bible enforcement against new prose.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/L-BibleGuard.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Gatekeeper": {
+      "description": "LitRPG entry point auditor for series books.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/L-Gatekeeper.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Track": {
+      "description": "LitRPG progress tracker for word counts, levels, and stat trends.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Track.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Audio": {
+      "description": "Audiobook readiness auditor for LitRPG.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/L-Audio.txt}",
+      "permission": { "read": "allow", "write": "allow", "task": "deny", "bash": "deny", "glob": "deny", "grep": "deny" }
+    },
+    "L-Series": {
+      "description": "LitRPG series continuity orchestrator. Delegates to L-ThreadTracker, L-BibleGuard, L-Gatekeeper.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/L-Series.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": { "*": "allow", "L-Series": "deny" },
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Plan": {
+      "description": "Orchestrates the planning pipeline. Guides the user through architecture, technology selection, and project structure by delegating to specialist sub-agents. Invoke with a feature or project idea to begin.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/D-Plan.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "deny",
+        "write": "deny",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "D-Plan": "deny"
+        }
+      }
+    },
+    "D-Arch": {
+      "description": "Architecture design specialist. Designs system boundaries, component architecture, data flow, and key design decisions.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/D-Arch.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Tech": {
+      "description": "Technology selection specialist. Evaluates dependencies, frameworks, and tools against project requirements with tradeoff analysis.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/D-Tech.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Build": {
+      "description": "Orchestrates the build pipeline. Delegates implementation, refactoring, and testing to specialist sub-agents.",
+      "mode": "primary",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/D-Build.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "D-Build": "deny"
+        }
+      }
+    },
+    "D-Impl": {
+      "description": "Implementation specialist. Writes production code from specifications following codebase conventions.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/D-Impl.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Refactor": {
+      "description": "Refactoring specialist. Restructures existing code without changing behavior.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/D-Refactor.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Test": {
+      "description": "Test writing specialist. Designs and writes clean, deterministic tests following project conventions.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/D-Test.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Review": {
+      "description": "Orchestrates the review pipeline. Delegates correctness, security, and performance auditing to specialist sub-agents.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/D-Review.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "write": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "D-Review": "deny"
+        }
+      }
+    },
+    "D-Correctness": {
+      "description": "Logic and correctness auditor. Finds logic errors, edge cases, race conditions, and error handling gaps.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/D-Correctness.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Sentry": {
+      "description": "Security auditor. Identifies injection vulnerabilities, auth flaws, data exposure, and crypto issues.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/D-Sentry.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Perf": {
+      "description": "Performance analyst. Identifies hot path inefficiencies, N+1 queries, memory issues, and I/O bottlenecks.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/D-Perf.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "D-Skeptic": {
+      "description": "Devil's advocate. Challenges assumptions, questions necessity, stress-tests designs with active hostility toward the code but respect for the author.",
+      "mode": "subagent",
+      "temperature": 0.5,
+      "prompt": "{file:./prompts/D-Skeptic.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+
     "S-Plan": {
       "description": "The single mode orchestrator for OSRS Simba script creation. Guides the user from script idea to production-ready code. Delegates architecture, tech selection, implementation, review, and refactoring to specialist sub-agents. Auto-refreshes API knowledge when invoked without context.",
       "mode": "primary",
@@ -78,28 +923,11 @@
         "grep": "deny"
       }
     },
-    "S-Review": {
-      "description": "Script review orchestrator. Runs multi-pass audit: correctness, anti-ban, performance, and stress testing for Simba scripts.",
+    "S-Audit": {
+      "description": "Combined logic validation + adversarial stress test. Finds state machine bugs, error handling gaps, failure scenarios, fragile assumptions, and detection risks in Simba scripts.",
       "mode": "subagent",
-      "temperature": 0.1,
-      "prompt": "{file:./prompts/S-Review.txt}",
-      "permission": {
-        "read": "allow",
-        "write": "deny",
-        "task": {
-          "*": "allow",
-          "S-Review": "deny"
-        },
-        "bash": "deny",
-        "glob": "deny",
-        "grep": "deny"
-      }
-    },
-    "S-Correctness": {
-      "description": "Logic and correctness auditor for OSRS Simba scripts. Finds logic errors, race conditions, state machine bugs, and error handling gaps.",
-      "mode": "subagent",
-      "temperature": 0.0,
-      "prompt": "{file:./prompts/S-Correctness.txt}",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/S-Audit.txt}",
       "permission": {
         "read": "allow",
         "task": "deny",
@@ -126,19 +954,6 @@
       "mode": "subagent",
       "temperature": 0.1,
       "prompt": "{file:./prompts/S-Perf.txt}",
-      "permission": {
-        "read": "allow",
-        "task": "deny",
-        "bash": "deny",
-        "glob": "deny",
-        "grep": "deny"
-      }
-    },
-    "S-Skeptic": {
-      "description": "Devil's advocate. Reads Simba scripts and architecture with active hostility. Finds realistic failure scenarios, fragile assumptions, and detection risks.",
-      "mode": "subagent",
-      "temperature": 0.5,
-      "prompt": "{file:./prompts/S-Skeptic.txt}",
       "permission": {
         "read": "allow",
         "task": "deny",

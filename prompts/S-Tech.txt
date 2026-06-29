@@ -44,7 +44,7 @@ ACTIVE MODULES:
   - ProgressReport — paint and status
   - ConsumableHandler — auto-eat at <50% HP
   - RSMonsters    — find and attack monsters
-  - LootHandler   — pick up valuable drops
+  - LootHandler   — pick up有价值的掉落物
 
 API PATTERNS:
   Bank.Open() → Bank.Withdraw('Logs', 28) → Bank.Close()
