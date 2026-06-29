@@ -1,0 +1,151 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "./plugins/srl.mjs"
+  ],
+  "agent": {
+    "S-Plan": {
+      "description": "The single mode orchestrator for OSRS Simba script creation. Guides the user from script idea to production-ready code. Delegates architecture, tech selection, implementation, review, and refactoring to specialist sub-agents. Auto-refreshes API knowledge when invoked without context.",
+      "mode": "primary",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/S-Plan.txt}",
+      "permission": {
+        "read": "allow",
+        "edit": "deny",
+        "write": "deny",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "S-Plan": "deny"
+        }
+      }
+    },
+    "S-Arch": {
+      "description": "Script architecture specialist. Designs state machines, task flow, anti-ban strategy, and fail-safe recovery for OSRS Simba scripts.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/S-Arch.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Tech": {
+      "description": "API selection specialist. Chooses which SRL-T and WaspLib modules fit the script task, with tradeoff analysis.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/S-Tech.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Impl": {
+      "description": "Implementation specialist. Writes production-quality Simba/Pascal code for OSRS scripts using SRL-T and WaspLib.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/S-Impl.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Refactor": {
+      "description": "Refactoring specialist. Restructures existing Simba scripts without changing behavior. Eliminates magic numbers, extracts functions, simplifies state machines.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/S-Refactor.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Review": {
+      "description": "Script review orchestrator. Runs multi-pass audit: correctness, anti-ban, performance, and stress testing for Simba scripts.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/S-Review.txt}",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "task": {
+          "*": "allow",
+          "S-Review": "deny"
+        },
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Correctness": {
+      "description": "Logic and correctness auditor for OSRS Simba scripts. Finds logic errors, race conditions, state machine bugs, and error handling gaps.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/S-Correctness.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Sentry": {
+      "description": "Anti-ban/anti-detection audit specialist. Scans Simba scripts for bot-like patterns, fixed timings, inhuman reaction times, and detection risks.",
+      "mode": "subagent",
+      "temperature": 0.0,
+      "prompt": "{file:./prompts/S-Sentry.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Perf": {
+      "description": "Performance optimization specialist. Identifies CPU waste, memory leaks, inefficient loops, and tight sleep patterns in Simba scripts.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/S-Perf.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    },
+    "S-Skeptic": {
+      "description": "Devil's advocate. Reads Simba scripts and architecture with active hostility. Finds realistic failure scenarios, fragile assumptions, and detection risks.",
+      "mode": "subagent",
+      "temperature": 0.5,
+      "prompt": "{file:./prompts/S-Skeptic.txt}",
+      "permission": {
+        "read": "allow",
+        "task": "deny",
+        "bash": "deny",
+        "glob": "deny",
+        "grep": "deny"
+      }
+    }
+  }
+}

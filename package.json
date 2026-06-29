@@ -1,0 +1,9 @@
+{
+  "name": "opencode-srl-scripting-plugin",
+  "version": "1.0.0",
+  "description": "OpenCode plugin for OSRS Simba script creation using SRL-T and WaspLib",
+  "type": "module",
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.17.0"
+  }
+}
