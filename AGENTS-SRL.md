@@ -345,13 +345,23 @@ The core execution (prayer flick, gear switch, movement) must be tick-perfect to
 - Sometimes eat 1 tick late under pressure
 - Vary *which* tick you execute on — don't always prayer-flick on the exact same game tick
 
-### Fatigue Modeling
+### Fatigue Modeling (Safe, Cosmetic Only)
 
-A human who kills Vorkath 1000 times will be perfect on kill 47, sloppy on kill 312, and panic on kill 689. Longer sessions should introduce more "mistakes":
-- After 30 minutes, increase reaction delay range by 50ms
-- After 60 minutes, increase misclick rate by 1%
-- After 90 minutes, introduce a "fumble" (miss a prayer flick / eat unnecessarily)
-- Vary these thresholds per session so they're not predictable
+Fatigue adds human texture — it never causes the player to die or lose items. The script's core execution must remain safe at all times. Fatigue only affects things that don't matter for survival:
+
+- **Click offset:** after 60 minutes, increase the random click offset range by 1-2px (wider scatter, but still hits the target)
+- **Camera rotation:** after 45 minutes, rotate the camera slightly more often (simulates restlessness)
+- **Tab checking:** after 60 minutes, check a wrong tab by accident 1-2% of the time and correct immediately (simulates autopilot)
+- **Reaction delay:** add 50-100ms to the upper bound of reaction delay, but the *minimum* stays the same (you still react fast enough, just sometimes a fraction slower)
+- **Click hesitation:** 1% chance of a tiny extra hesitation (50ms) before clicking, even on urgent actions
+
+Fatigue NEVER affects:
+- Prayer flicks — missing one kills you. Not worth the realism.
+- Eating timing — eating late = death. Script must always eat at the threshold.
+- Gear switches — failing to switch = damage. Always switch correctly.
+- Movement — walking into danger = death. Always position correctly.
+- Special attacks — missing a spec window is costly. Always execute.
+- Item identification — clicking the wrong gear or food = bad. Always click the right thing.
 
 ### Available Primitives for Boss Scripts
 

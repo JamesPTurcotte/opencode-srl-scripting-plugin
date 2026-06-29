@@ -201,13 +201,17 @@ begin
 end;
 ```
 
-### Fatigue Model
+### Fatigue Model (Safe, Cosmetic Only)
+
+Fatigue affects things that don't matter for survival. Never touch prayer, eating, gear switches, movement, or special attacks.
 
 ```pascal
-// Track session duration and degrade performance over time
+// Track session duration — cosmetic variance only
+// NEVER affects: prayer flicks, eating, gear switches, movement, special attacks
 var
   gSessionStart: UInt64;
-  gFatigueModifier: Integer;  // 0 = fresh, 1 = tired, 2 = exhausted
+  gFatigueOffset: Integer;  // extra px on click offsets
+  gFatigueTabCheck: Boolean;  // 1% chance to check wrong tab
 
 procedure UpdateFatigue();
 var
@@ -215,25 +219,44 @@ var
 begin
   elapsed := (GetTickCount() - gSessionStart) / 60000;
 
-  if elapsed > 90 then
-    gFatigueModifier := 2      // exhausted: more mistakes
-  else if elapsed > 60 then
-    gFatigueModifier := 1      // tired: occasional fumbles
+  // After 60 minutes: subtle cosmetic changes only
+  if elapsed > 60 then
+  begin
+    gFatigueOffset := 2;         // click scatter widens by 2px (safe, still hits target)
+    gFatigueTabCheck := True;    // enable 1% accidental tab check
+  end
   else if elapsed > 30 then
-    gFatigueModifier := 0      // warmed up: slight variance
+  begin
+    gFatigueOffset := 1;         // slight widening
+    gFatigueTabCheck := False;
+  end
   else
-    gFatigueModifier := -1;    // fresh: sharpest performance
+  begin
+    gFatigueOffset := 0;
+    gFatigueTabCheck := False;
+  end;
 end;
 
-// Use fatigue to modify reaction time:
-procedure FatiguedReaction();
+// Apply fatigue to click offset (safe — still hits the target)
+function FatiguedOffset(): Integer;
 begin
-  case gFatigueModifier of
-    -1: Wait(RandomRange(0, 100));     // fresh: quick reactions
-     0: Wait(RandomRange(50, 200));    // warmed up: normal
-     1: Wait(RandomRange(100, 400));   // tired: slower, fumble chance
-     2: Wait(RandomRange(200, 600));   // exhausted: sloppy
+  Result := RandomRange(-2 - gFatigueOffset, 2 + gFatigueOffset);
+end;
+
+// 1% chance to briefly open the wrong tab and correct
+// Simulates autopilot — human thing, not dangerous
+procedure MaybeWrongTab();
+begin
+  if not gFatigueTabCheck then Exit;
+  if Random(100) > 1 then Exit;  // 1% chance
+
+  case Random(3) of
+    0: GameTabs.Open(ERSGameTab.SKILLS);
+    1: GameTabs.Open(ERSGameTab.OPTIONS);
+    2: GameTabs.Open(ERSGameTab.EMOTES);
   end;
+  Wait(RandomRange(300, 800));
+  // Correct — go back to what we need
 end;
 ```
 

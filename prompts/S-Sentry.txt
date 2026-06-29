@@ -78,6 +78,7 @@ Boss scripts have different detection risks. The core execution must be tick-pre
 - No fatigue modeling — perfect performance after 2+ hours is inhuman
 - Same approach on kill 1 as kill 200 — humans get sloppy, rush, or autopilot
 - No breaks after long sessions (90+ minutes without any pause)
+- Fatigue should be cosmetic only — if fatigue affects prayer, eating, gear switches, or movement, it's over-engineered and dangerous. Fatigue should affect click offset scatter (+1-2px), occasional wrong-tab check (1%), or slight reaction upper-bound shift — never survival-critical actions.
 
 ### DETECTION DURING FIGHTS (FATAL)
 - Prayer flicking that never misses a beat — 100% accuracy over 1000 kills is impossible
