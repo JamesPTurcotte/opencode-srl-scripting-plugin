@@ -201,17 +201,16 @@ begin
 end;
 ```
 
-### Fatigue Model (Safe, Cosmetic Only)
+### Fatigue Model (DPS-Cost Only — Never Lethal)
 
-Fatigue affects things that don't matter for survival. Never touch prayer, eating, gear switches, movement, or special attacks.
+Fatigue can cost DPS, a non-lethal hit, or a wasted tick. It never kills the player or loses items. Before any fatigue-affected action, check: "could this mistake kill me right now?" If yes, execute perfectly. If no, add the variance.
 
 ```pascal
-// Track session duration — cosmetic variance only
-// NEVER affects: prayer flicks, eating, gear switches, movement, special attacks
+// Track session duration — fatigue that can cost DPS but never kills
+// Before each fatigued action, checks context: "will this kill me?"
 var
   gSessionStart: UInt64;
-  gFatigueOffset: Integer;  // extra px on click offsets
-  gFatigueTabCheck: Boolean;  // 1% chance to check wrong tab
+  gFatigueLevel: Integer;  // 0=fresh, 1=warmed, 2=tired
 
 procedure UpdateFatigue();
 var
@@ -219,36 +218,72 @@ var
 begin
   elapsed := (GetTickCount() - gSessionStart) / 60000;
 
-  // After 60 minutes: subtle cosmetic changes only
-  if elapsed > 60 then
-  begin
-    gFatigueOffset := 2;         // click scatter widens by 2px (safe, still hits target)
-    gFatigueTabCheck := True;    // enable 1% accidental tab check
-  end
-  else if elapsed > 30 then
-  begin
-    gFatigueOffset := 1;         // slight widening
-    gFatigueTabCheck := False;
-  end
+  if elapsed > 90 then
+    gFatigueLevel := 2
+  else if elapsed > 45 then
+    gFatigueLevel := 1
   else
-  begin
-    gFatigueOffset := 0;
-    gFatigueTabCheck := False;
-  end;
+    gFatigueLevel := 0;
 end;
 
-// Apply fatigue to click offset (safe — still hits the target)
-function FatiguedOffset(): Integer;
+// Safe prayer miss — only when the hit won't kill
+// Pass the boss's max hit and your current HP
+procedure MaybeMissPrayer(bossMaxHit, currentHP: Integer);
 begin
-  Result := RandomRange(-2 - gFatigueOffset, 2 + gFatigueOffset);
+  if gFatigueLevel = 0 then Exit;
+  if Random(100) > 2 then Exit;  // 2% chance max
+
+  // Can we survive a hit?
+  if bossMaxHit >= currentHP then Exit;  // lethal — never miss
+
+  // We can tank this hit. Miss the flick.
+  // (fall through — prayer not activated this tick)
+  // The next loop iteration will catch it.
 end;
 
-// 1% chance to briefly open the wrong tab and correct
-// Simulates autopilot — human thing, not dangerous
+// Safe delayed spec — 1 tick later, costs DPS not the kill
+procedure MaybeDelaySpec(): Integer;
+begin
+  if gFatigueLevel < 1 then Exit(0);
+  if Random(100) > 3 then Exit(0);  // 3% chance
+
+  // Delay by 1 tick (600ms)
+  Result := 1;
+end;
+
+// Safe delayed eat — only when above lethal threshold
+// Pass the boss's max hit and your current HP
+function MaybeDelayEat(bossMaxHit, currentHP: Integer): Integer;
+begin
+  if gFatigueLevel < 1 then Exit(0);
+  if Random(100) > 3 then Exit(0);
+
+  // Would eating 1 tick late still leave us above lethal?
+  if currentHP - bossMaxHit < 10 then Exit(0);  // too risky
+
+  // Delay eat by 1 tick
+  Wait(600);
+  Result := 1;
+end;
+
+// Wider click offset with fatigue
+function FatiguedOffset(): Integer;
+var
+  extra: Integer;
+begin
+  case gFatigueLevel of
+    1: extra := 2;
+    2: extra := 4;
+    else extra := 0;
+  end;
+  Result := RandomRange(-3 - extra, 3 + extra);
+end;
+
+// Accidental wrong-tab check (simulates autopilot)
 procedure MaybeWrongTab();
 begin
-  if not gFatigueTabCheck then Exit;
-  if Random(100) > 1 then Exit;  // 1% chance
+  if gFatigueLevel < 2 then Exit;
+  if Random(100) > 1 then Exit;  // 1% chance, only when tired
 
   case Random(3) of
     0: GameTabs.Open(ERSGameTab.SKILLS);

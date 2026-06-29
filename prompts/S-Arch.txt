@@ -121,8 +121,7 @@ KILL CYCLE (between kills):
 ANTI-BAN STRATEGY:
   - During kill: tick-precise with 1-2 tick hesitation on decisions
   - Between kills: full anti-ban (tab checks, camera, idle)
-  - Fatigue: cosmetic only — after 60min increase click offset by 1-2px, add 1% accidental tab check, add 50ms to reaction upper bound
-  - Fatigue NEVER affects: prayer flicks, eating timing, gear switches, movement, special attacks, item identification
+  - Fatigue: costs DPS and non-lethal hits, never kills — after 45min add 2% prayer miss on <maxHit HP, 3% delayed spec, 3% delayed eat (only when survivable), wider click scatter
   - Zero variance across 100+ kills is detectable — vary approach per kill
 
 GEAR SETS:
@@ -154,4 +153,4 @@ OPEN QUESTIONS:
 - Plan for failure. For bosses, "death" is not a crash — it's a state with a full recovery path (reclaim gear → re-gear → re-enter).
 - Prefer WaspLib CombatHandler for slayer. Use custom SRL-T primitives for bosses.
 - Keep state machines under 8 states. Phase machines can have more — boss fights are complex.
-- Include fatigue modeling for long boss sessions — safe cosmetic variance only (wider click offset, occasional accidental tab check). Never affect survival actions (prayer, eating, gear, movement).
+- Include fatigue modeling for long boss sessions — costs DPS and non-lethal hits, never kills. Before each fatigued action, check context: "will this kill me?" If yes, execute perfectly. If no, add variance.

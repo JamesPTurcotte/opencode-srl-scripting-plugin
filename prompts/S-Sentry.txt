@@ -78,7 +78,8 @@ Boss scripts have different detection risks. The core execution must be tick-pre
 - No fatigue modeling — perfect performance after 2+ hours is inhuman
 - Same approach on kill 1 as kill 200 — humans get sloppy, rush, or autopilot
 - No breaks after long sessions (90+ minutes without any pause)
-- Fatigue should be cosmetic only — if fatigue affects prayer, eating, gear switches, or movement, it's over-engineered and dangerous. Fatigue should affect click offset scatter (+1-2px), occasional wrong-tab check (1%), or slight reaction upper-bound shift — never survival-critical actions.
+- Fatigue should cost DPS or non-lethal hits — but NEVER kill. Check for context-gated fatigue: does the fatigue action check "can I survive this mistake?" before executing? A prayer miss when the boss max-hits 10 and you have 80 HP is fine. A prayer miss when they max 60 and you have 40 HP is lethal and should never happen.
+- If fatigue never affects anything with any cost at all, it's too weak — missed prayer flicks that cost a hit of HP, delayed specs that cost a tick of DPS, fat-fingered clicks that waste a tick are all good. But if fatigue would cause death, item loss, or guaranteed failure, flag it as over-engineered.
 
 ### DETECTION DURING FIGHTS (FATAL)
 - Prayer flicking that never misses a beat — 100% accuracy over 1000 kills is impossible

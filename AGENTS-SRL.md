@@ -345,23 +345,28 @@ The core execution (prayer flick, gear switch, movement) must be tick-perfect to
 - Sometimes eat 1 tick late under pressure
 - Vary *which* tick you execute on — don't always prayer-flick on the exact same game tick
 
-### Fatigue Modeling (Safe, Cosmetic Only)
+### Fatigue Modeling (DPS-Cost Only — Never Lethal)
 
-Fatigue adds human texture — it never causes the player to die or lose items. The script's core execution must remain safe at all times. Fatigue only affects things that don't matter for survival:
+Fatigue adds human texture. It can cost you **DPS**, a **non-lethal hit**, or a **wasted tick** — but it never kills the player or loses items.
 
-- **Click offset:** after 60 minutes, increase the random click offset range by 1-2px (wider scatter, but still hits the target)
-- **Camera rotation:** after 45 minutes, rotate the camera slightly more often (simulates restlessness)
-- **Tab checking:** after 60 minutes, check a wrong tab by accident 1-2% of the time and correct immediately (simulates autopilot)
-- **Reaction delay:** add 50-100ms to the upper bound of reaction delay, but the *minimum* stays the same (you still react fast enough, just sometimes a fraction slower)
-- **Click hesitation:** 1% chance of a tiny extra hesitation (50ms) before clicking, even on urgent actions
+#### What fatigue CAN affect (safe errors):
 
-Fatigue NEVER affects:
-- Prayer flicks — missing one kills you. Not worth the realism.
-- Eating timing — eating late = death. Script must always eat at the threshold.
-- Gear switches — failing to switch = damage. Always switch correctly.
-- Movement — walking into danger = death. Always position correctly.
-- Special attacks — missing a spec window is costly. Always execute.
-- Item identification — clicking the wrong gear or food = bad. Always click the right thing.
+- **Prayer flick:** miss 1 flick on a hit that won't kill you (e.g., taking 10 damage at 80 HP). Cost: a few HP, not your life.
+- **Reaction delay:** delay a prayer/gear switch by 1 tick. Cost: 1 hit of avoidable damage, within survivable range.
+- **Special attack:** use spec 1 tick late. Cost: DPS, not the kill.
+- **Attack timing:** hesitate 1 tick before attacking. Cost: DPS.
+- **Eating:** eat 1 tick past the threshold, but never below lethal HP. Cost: a few extra HP lost.
+- **Click accuracy:** wider click scatter that sometimes clicks empty ground next to the target. Cost: 1 tick of repositioning.
+- **Gear switch:** delay the switch by 50-100ms. Cost: 1 tick of wrong-gear attacks, not death.
+
+#### What fatigue NEVER affects (lethal):
+
+- **Prayer on a max-hit:** if the boss can hit 60 and you have 60 HP, you never miss that flick. Fatigue checks the context.
+- **Eating below lethal:** if you're at 30 HP and the boss hits 40, you eat *before* fatigue can delay you.
+- **Movement into death:** if standing still means instant kill, you move correctly regardless of fatigue.
+- **Item identification:** never mis-click the wrong food/potion/gear — that's a catastrophic error.
+
+**The rule:** before any fatigue-affected action, check: "could this mistake kill me right now?" If yes, execute perfectly. If no, add the variance.
 
 ### Available Primitives for Boss Scripts
 
